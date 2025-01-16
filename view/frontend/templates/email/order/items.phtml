@@ -1,25 +1,18 @@
 <?php
-
-use Wismolabs\Tracking\Helper\Data as TrackingHelper;
-
-// phpcs:disable Magento2.Templates.ThisInTemplate
-
-/** @var $block \Magento\Sales\Block\Order\Email\Items */
+/** @var \Magento\Sales\Block\Order\Email\Items $block */
+/** @var \Magento\Sales\Model\Order $_order */
+/** @var \Magento\GiftMessage\Helper\Message $gmHelper */
 ?>
+
+<?php
+    /** @var \Wismolabs\Tracking\ViewModel\OrderItemViewModel $siViewModel */
+    $oiViewModel = $block->getData('orderItemViewModel');
+?>
+
 <?php $_order = $block->getOrder() ?>
+<?php $gmHelper = $oiViewModel->getGiftMessageHelper() ?>
 <?php if ($_order): ?>
-    <?php
-    try {
-        /** @var \Wismolabs\Tracking\Helper\Data $helper */
-        $helper = $this->helper(TrackingHelper::class);
-        /** @var \Magento\Sales\Model\Order $_order */
-        if ($helper->isLinkEnabledInOrderConfirmationEmail($_order->getStoreId())) {
-            echo $helper->getTrackButtonHtml($helper->getCombinedUrl($_order));
-        }
-    } catch (\Exception $e) {
-          echo "";
-    }
-    ?>
+    <?=$oiViewModel->getTrackButtonHtml($_order);?>
     <?php $_items = $_order->getAllItems(); ?>
     <table class="email-items">
         <thead>
@@ -46,11 +39,11 @@ use Wismolabs\Tracking\Helper\Data as TrackingHelper;
             <?= $block->getChildHtml('order_totals') ?>
         </tfoot>
     </table>
-    <?php if ($this->helper(\Magento\GiftMessage\Helper\Message::class)
+    <?php if ($gmHelper
             ->isMessagesAllowed('order', $_order, $_order->getStore())
         && $_order->getGiftMessageId()
     ): ?>
-        <?php $_giftMessage = $this->helper(\Magento\GiftMessage\Helper\Message::class)
+        <?php $_giftMessage = $gmHelper
             ->getGiftMessage($_order->getGiftMessageId()); ?>
         <?php if ($_giftMessage): ?>
             <br />

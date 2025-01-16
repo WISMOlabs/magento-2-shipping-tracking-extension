@@ -8,6 +8,7 @@ use Magento\Sales\Model\Order\Shipment\Track;
 use \Magento\Sales\Model\Order\Shipment;
 use \Magento\Catalog\Model\ProductFactory;
 use \Magento\Sales\Api\OrderRepositoryInterface;
+use Magento\Framework\HTTP\Client\Curl;
 use Magento\Sales\Model\ResourceModel\Order\Shipment\Track\Collection as TrackCollection;
 
 class Data extends \Magento\Framework\App\Helper\AbstractHelper
@@ -41,6 +42,11 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     protected $orderRepository;
 
     /**
+     * @var Curl
+     */
+    protected $curlClient;
+
+    /**
      *
      * @var CustomerRepositoryInterface
      */
@@ -51,17 +57,20 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      * @param ProductFactory $productFactory
      * @param CustomerRepositoryInterface $customerRepository
      * @param OrderRepositoryInterface $orderRepository
+     * @param Curl $curlClient
      */
     public function __construct(
         Context $context,
         ProductFactory $productFactory,
         CustomerRepositoryInterface $customerRepository,
-        OrderRepositoryInterface $orderRepository
+        OrderRepositoryInterface $orderRepository,
+        Curl $curlClient
     ) {
         parent::__construct($context);
         $this->productFactory = $productFactory;
         $this->customerRepository = $customerRepository;
         $this->orderRepository = $orderRepository;
+        $this->curlClient = $curlClient;
     }
 
     /**
@@ -149,7 +158,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
             },
             !empty($shipment->getItems()) ? $shipment->getItems() : []
         );
-        $oneDimension = call_user_func_array('array_merge', $categoryIds);
+        $oneDimension = array_merge(...$categoryIds);
         return implode(",", array_unique($oneDimension));
     }
 
@@ -168,7 +177,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
             },
             !empty($order->getItems()) ? $order->getItems() : []
         );
-        $oneDimension = call_user_func_array('array_merge', $categoryIds);
+        $oneDimension = array_merge(...$categoryIds);
         return implode(",", array_unique($oneDimension));
     }
 
@@ -245,7 +254,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
         foreach ($attrCodesToSendArray as $attrCode) {
             $methodName = $this->getterName($attrCode);
             if (method_exists($customer, $methodName)) {
-                $attrVal = call_user_func([$customer, $methodName]);
+                $attrVal = $customer->$methodName();
             } else {
                 $attrVal = $customer->getCustomAttribute($attrCode);
             }
@@ -489,25 +498,21 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      */
     public function sendTrack($postData, $storeId, $trackId, $orderId)
     {
-        $opts = ['http' =>
-            [
-                'method'  => 'POST',
-                'header'  => [
-                    'Accept: application/json',
-                    'Content-Type: application/json',
-                    'x-wismo-auth-token: ' . $this->getAuthToken($storeId)
-                ],
-                'content' => $postData,
-                'ignore_errors' => true
-            ]
-        ];
-
         try {
-            $context  = stream_context_create($opts);
             $url = $this->getUrlToSendTrack($storeId);
-            //$w = stream_get_wrappers();// you might want to check if $w has "https" value in it if this code has issue
+            $headers = [
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+                'x-wismo-auth-token' => $this->getAuthToken($storeId)
+            ];
     
-            $response = file_get_contents($url, false, $context);
+            // Set headers and body (POST data)
+            $this->curlClient->setHeaders($headers);
+            $this->curlClient->post($url, $postData);
+    
+            // Get response
+            $response = $this->curlClient->getBody();
+
             $responseCode = $http_response_header[0];
             if (str_contains($responseCode, "HTTP/1.1 20")) {
                 $this->log(
@@ -593,7 +598,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
     private function waitIfQueue($storeId)
     {
         if ($this->useQueue($storeId) && $this->getRPS($storeId)) {
-            usleep(intval(1000000/$this->getRPS($storeId)));
+            usleep((int)(1000000 / $this->getRPS($storeId)));
         }
     }
 

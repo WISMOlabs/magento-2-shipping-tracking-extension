@@ -1,23 +1,20 @@
 <?php
-// phpcs:disable Magento2.Templates.ThisInTemplate
+    /** @var \Wismolabs\Tracking\ViewModel\InfoButtonsViewModel $ibViewModel */
+    $ibViewModel = $block->getData('infoButtonsViewModel');
 ?>
 <div class="actions">
     <?php $_order = $block->getOrder() ?>
-    <?php if ($this->helper(\Magento\Sales\Helper\Reorder::class)->canReorder($_order->getEntityId())): ?>
+    <?php if ($ibViewModel->getReorderHelper()->canReorder($_order->getEntityId())): ?>
         <a href="#" data-post='<?=
-        /* @noEscape */ $this->helper(\Magento\Framework\Data\Helper\PostHelper::class)
+        /* @noEscape */ $ibViewModel->getPostHelper()
             ->getPostData($block->getReorderUrl($_order))
         ?>' class="action order">
             <span><?= $escaper->escapeHtml(__('Reorder')) ?></span>
         </a>
     <?php endif ?>
 
-    <?php
-    /** @var \Wismolabs\Tracking\Helper\Data $helper */
-    $helper = $this->helper(\Wismolabs\Tracking\Helper\Data::class);
-    ?>
-    <?php if ($helper->isLinkEnabledInUserAccountOrdersPage($_order->getStoreId())): ?>
-        <?php $allShipmentsUrl = $helper->getCombinedUrl($_order) ?>
+    <?php if ($ibViewModel->isLinkEnabledInUserAccountOrdersPage($_order->getStoreId())): ?>
+        <?php $allShipmentsUrl = $ibViewModel->getCombinedUrl($_order) ?>
         <a href="#" class="action track" title="<?= $escaper->escapeHtml(__('Track All Shipments')) ?>"
            data-mage-init='{"popupWindow": {
                 "windowURL":"<?= $escaper->escapeHtml($allShipmentsUrl); ?>",
