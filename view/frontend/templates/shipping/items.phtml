@@ -1,24 +1,19 @@
-<?php
-//phpcs:disable Squiz.ControlStructures.ControlSignature.NewlineAfterOpenBrace
-//phpcs:disable Squiz.WhiteSpace.ScopeClosingBrace.ContentBefore
-//phpcs:disable Magento2.Templates.ThisInTemplate.FoundThis
-//phpcs:disable Magento2.Files.LineLength.MaxExceeded`
-?>
-<?php
-use Wismolabs\Tracking\Helper\Data as TrackingHelper;
-
-/** @var \Wismolabs\Tracking\Helper\Data $helper */
-$helper = $this->helper(TrackingHelper::class);
-?>
-<?php /** @var  $block \Magento\Shipping\Block\Items */ ?>
+<?php /** @var \Magento\Shipping\Block\Items $block */ ?>
+<?php /** @var  Magento\Sales\Model\Order $_order */ ?>
 <?php  $_order = $block->getOrder() ?>
 
-<?php if ($helper->isLinkEnabledInUserAccountOrdersPage($_order->getStoreId())): ?>
-<div class="actions-toolbar">
 
-    <?php if ($helper->isLinkEnabledInUserAccountOrdersPage($_order->getStoreId()) &&
-         $_order->getTracksCollection()->count()): ?>
-        <?php $allShipmentsUrl = $helper->getCombinedUrl($_order) ?>
+<?php
+    /** @var \Wismolabs\Tracking\ViewModel\ShippingItemsViewModel $siViewModel */
+    $siViewModel = $block->getData('shippingItemsViewModel');
+    $linkEnabled = $siViewModel
+        ->isLinkEnabledInUserAccountOrdersPage($_order->getStoreId());
+?>
+
+<?php if ($linkEnabled): ?>
+<div class="actions-toolbar">
+    <?php if ($_order->getTracksCollection()->count()): ?>
+        <?php $allShipmentsUrl = $siViewModel->getCombinedUrl($_order) ?>
         <a href="#" class="action track" title="<?= $escaper->escapeHtml(__('Track All Shipments')) ?>"
            data-mage-init='{"popupWindow": {
                 "windowURL":"<?= $escaper->escapeHtml($allShipmentsUrl); ?>",
@@ -53,9 +48,9 @@ $helper = $this->helper(TrackingHelper::class);
             <span><?= $escaper->escapeHtml(__('Print Shipment')) ?></span>
         </a>
         <?php
-        $thisShipmentUrl = $helper->getCombinedUrl($_order, $_shipment->getTracksCollection())
+        $thisShipmentUrl = $siViewModel->getCombinedUrl($_order, $_shipment->getTracksCollection())
         ?>
-        <?php if ($helper->isLinkEnabledInUserAccountOrdersPage($_order->getStoreId())): ?>
+        <?php if ($linkEnabled): ?>
         <a href="#"
            data-mage-init='{"popupWindow": {
            "windowURL":"<?= $escaper->escapeHtml($thisShipmentUrl); ?>",
@@ -74,7 +69,7 @@ $helper = $this->helper(TrackingHelper::class);
         <?php endif; ?>
     </div>
         <?php $tracks = $_shipment->getTracksCollection(); ?>
-        <?php  if ($tracks->count() && $helper->isLinkEnabledInUserAccountOrdersPage($_order->getStoreId())): ?>
+        <?php  if ($tracks->count() && $linkEnabled): ?>
         <dl class="order-tracking" id="my-tracking-table-<?= (int) $_shipment->getId() ?>">
             <dt class="tracking-title">
                 <?= $escaper->escapeHtml(__('Tracking Number(s):')) ?>
@@ -88,7 +83,7 @@ $helper = $this->helper(TrackingHelper::class);
                         <?= $escaper->escapeHtml($track->getNumber()) ?>
                     <?php else: ?>
                         <?php
-                           $url = $helper->getUrl($_order, $track) ?>
+                           $url = $siViewModel->getUrl($_order, $track) ?>
                             <a href="#"
                                 data-mage-init='{"popupWindow": {
                                 "windowURL":"<?= $escaper->escapeUrl($url) ?>",

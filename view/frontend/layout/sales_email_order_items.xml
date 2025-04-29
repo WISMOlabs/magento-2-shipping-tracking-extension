@@ -5,6 +5,9 @@
             <action method="setTemplate" >
                 <argument name="template" xsi:type="string">Wismolabs_Tracking::email/order/items.phtml</argument>
             </action>
+            <arguments>
+                <argument name="orderItemViewModel" xsi:type="object">Wismolabs\Tracking\ViewModel\OrderItemViewModel</argument>
+            </arguments>
         </referenceBlock>
     </body>
 </page>
